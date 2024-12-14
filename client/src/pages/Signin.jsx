@@ -1,14 +1,16 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { signInStart, signInSuccess, signInFailure } from "../redux/User/userSlice";
 
 const Signin = () => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+
+  const dispatch = useDispatch();
+  const { loading, error } = useSelector((state) => state.user); // Redux state
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -21,10 +23,9 @@ const Signin = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
-    setSuccess(false);
+    dispatch(signInStart()); // Set loading state
+
     try {
-      setLoading(true);
       const response = await fetch("/api/auth/signin", {
         method: "POST",
         headers: {
@@ -32,19 +33,17 @@ const Signin = () => {
         },
         body: JSON.stringify(formData),
       });
+
       const result = await response.json();
-      console.log(result);
+
       if (response.ok) {
-        console.log("Sign-in successful");
-        setSuccess(true);
-        setTimeout(() => navigate("/"), 3000); // Redirect after 3 seconds
+        dispatch(signInSuccess(result)); // Success action with payload
+        navigate("/"); // Redirect immediately
       } else {
-        setError(result.message || "Sign-in failed. Please try again.");
+        dispatch(signInFailure(result.message || "Sign-in failed. Please try again."));
       }
     } catch (err) {
-      setError(err.message || "An unexpected error occurred.");
-    } finally {
-      setLoading(false);
+      dispatch(signInFailure(err.message || "An unexpected error occurred."));
     }
   };
 
@@ -56,16 +55,8 @@ const Signin = () => {
       }}
     >
       <div className="p-8 rounded-lg shadow-lg bg-gray-900 bg-opacity-75 w-full max-w-md border white">
-        <h2 className="text-2xl font-bold text-center text-white mb-6">
-          LOGIN
-        </h2>
+        <h2 className="text-2xl font-bold text-center text-white mb-6">LOGIN</h2>
         <form onSubmit={handleSubmit}>
-          {/* Success Message */}
-          {success && (
-            <div className="mb-4 p-3 rounded bg-green-600 text-white text-sm">
-              Login successful! Redirecting to the homepage...
-            </div>
-          )}
           {/* Error Message */}
           {error && (
             <div className="mb-4 p-3 rounded bg-red-600 text-white text-sm">
